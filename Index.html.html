@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matriz de Dudas QA — DigiPro</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-base:      #1c1c1e;
+    --bg-surface:   #2c2c2e;
+    --bg-elevated:  #3a3a3c;
+    --bg-input:     #242426;
+    --border:       rgba(255,255,255,0.08);
+    --border-hover: rgba(255,255,255,0.16);
+    --text-primary: #f5f5f5;
+    --text-secondary: #a1a1a6;
+    --text-muted:   #636366;
+    --accent-green: #4DB848;
+    --accent-blue:  #00BAF2;
+    --accent-navy:  #002838;
+    --status-pend:  #f4a022;
+    --status-res:   #4DB848;
+    --status-esc:   #ff453a;
+    --tag-hu:       #00BAF2;
+    --tag-exp:      #bf5af2;
+    --tag-cp:       #4DB848;
+    --tag-def:      #ff6b6b;
+    --tag-az:       #0078d4;
+    --tag-gen:      #636366;
+  }
+
+  body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 28px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo-mark {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--accent-green);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px; color: #fff; letter-spacing: -0.5px;
+  }
+  .header-title { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+  .header-sub { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+  .header-stats { display: flex; gap: 20px; }
+  .stat-pill {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 14px;
+    text-align: center;
+    min-width: 70px;
+  }
+  .stat-pill .num { font-size: 18px; font-weight: 600; }
+  .stat-pill .lbl { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-pill.pend .num { color: var(--status-pend); }
+  .stat-pill.res .num  { color: var(--status-res); }
+  .stat-pill.esc .num  { color: var(--status-esc); }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    background: var(--bg-surface);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+  }
+  .search-wrap {
+    position: relative; flex: 1; min-width: 200px;
+  }
+  .search-wrap svg {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    width: 15px; height: 15px; stroke: var(--text-muted); fill: none; pointer-events: none;
+  }
+  .search-wrap input {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 13px;
+    padding: 8px 12px 8px 34px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-wrap input:focus { border-color: var(--accent-blue); }
+  .search-wrap input::placeholder { color: var(--text-muted); }
+
+  select {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  select:focus { border-color: var(--accent-blue); }
+
+  .btn-add {
+    background: var(--accent-green);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+  .btn-add:hover { opacity: 0.88; }
+
+  /* ── Main layout ── */
+  .main { display: flex; height: calc(100vh - 140px); overflow: hidden; }
+
+  /* ── Table panel ── */
+  .panel-table {
+    flex: 1; overflow-y: auto; padding: 20px 28px;
+  }
+  .panel-table::-webkit-scrollbar { width: 5px; }
+  .panel-table::-webkit-scrollbar-track { background: transparent; }
+  .panel-table::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    padding: 0 12px 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  tbody tr:hover { background: var(--bg-surface); }
+  tbody tr.selected { background: rgba(0,186,242,0.08); }
+  tbody td { padding: 12px; vertical-align: top; }
+
+  .td-id { color: var(--text-muted); font-size: 12px; font-family: monospace; white-space: nowrap; }
+  .td-duda { font-size: 13px; color: var(--text-primary); max-width: 240px; }
+  .td-duda small { display: block; color: var(--text-secondary); font-size: 11px; margin-top: 2px; }
+
+  /* tema tag */
+  .tag {
+    display: inline-block;
+    font-size: 10px; font-weight: 600;
+    padding: 3px 8px; border-radius: 5px;
+    letter-spacing: 0.3px; white-space: nowrap;
+  }
+  .tag-hu   { background: rgba(0,186,242,0.15);  color: var(--tag-hu); }
+  .tag-exp  { background: rgba(191,90,242,0.15); color: var(--tag-exp); }
+  .tag-cp   { background: rgba(77,184,72,0.15);  color: var(--tag-cp); }
+  .tag-def  { background: rgba(255,107,107,0.15);color: var(--tag-def); }
+  .tag-az   { background: rgba(0,120,212,0.15);  color: var(--tag-az); }
+  .tag-gen  { background: rgba(99,99,102,0.2);   color: var(--text-secondary); }
+
+  /* estado badge */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px;
+    white-space: nowrap;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .badge.pend { background: rgba(244,160,34,0.12); color: var(--status-pend); }
+  .badge.pend .badge-dot { background: var(--status-pend); }
+  .badge.res  { background: rgba(77,184,72,0.12);  color: var(--status-res); }
+  .badge.res  .badge-dot { background: var(--status-res); }
+  .badge.esc  { background: rgba(255,69,58,0.12);  color: var(--status-esc); }
+  .badge.esc  .badge-dot { background: var(--status-esc); }
+
+  .td-fecha { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+  /* ── Detail panel ── */
+  .panel-detail {
+    width: 380px;
+    border-left: 1px solid var(--border);
+    background: var(--bg-surface);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    transition: width 0.2s;
+  }
+  .panel-detail.hidden { width: 0; border: none; }
+
+  .detail-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .detail-header h3 { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+  .btn-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); font-size: 18px; line-height: 1;
+    transition: color 0.15s;
+  }
+  .btn-close:hover { color: var(--text-primary); }
+  .btn-delete {
+    background: none; border: 1px solid rgba(255,69,58,0.3);
+    border-radius: 7px; cursor: pointer;
+    color: var(--status-esc); font-size: 12px; font-weight: 600;
+    padding: 5px 10px; display: flex; align-items: center; gap: 5px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-delete:hover { background: rgba(255,69,58,0.1); border-color: var(--status-esc); }
+  .btn-edit {
+    background: none; border: 1px solid rgba(0,186,242,0.3);
+    border-radius: 7px; cursor: pointer;
+    color: var(--accent-blue); font-size: 12px; font-weight: 600;
+    padding: 5px 10px; display: flex; align-items: center; gap: 5px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-edit:hover { background: rgba(0,186,242,0.1); border-color: var(--accent-blue); }
+  .notas-manual {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: inherit;
+    padding: 10px 12px;
+    resize: vertical;
+    min-height: 80px;
+    outline: none;
+    line-height: 1.6;
+    transition: border-color 0.15s;
+  }
+  .notas-manual:focus { border-color: var(--accent-green); }
+  .notas-manual::placeholder { color: var(--text-muted); }
+  .btn-guardar-notas {
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 7px; color: var(--accent-green);
+    font-size: 12px; font-weight: 600;
+    padding: 6px 14px; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    align-self: flex-end;
+  }
+  .btn-guardar-notas:hover { border-color: var(--accent-green); background: rgba(77,184,72,0.08); }
+  .notas-saved-hint { font-size: 11px; color: var(--accent-green); display: none; align-self: center; }
+
+  .detail-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .detail-body::-webkit-scrollbar { width: 4px; }
+  .detail-body::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 2px; }
+
+  .detail-field label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: block; margin-bottom: 5px; }
+  .detail-field p   { font-size: 13px; color: var(--text-primary); line-height: 1.6; }
+
+  .detail-answer-box {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.7;
+    min-height: 60px;
+  }
+  .detail-answer-box.empty { color: var(--text-muted); font-style: italic; }
+
+  .btn-ai {
+    background: var(--accent-blue);
+    color: #fff; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: opacity 0.15s;
+    width: 100%;
+  }
+  .btn-ai:hover { opacity: 0.88; }
+  .btn-ai:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .ai-spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status-selector { display: flex; gap: 8px; }
+  .status-btn {
+    flex: 1; padding: 7px; border-radius: 7px; font-size: 11px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--bg-elevated);
+    color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+  }
+  .status-btn:hover { border-color: var(--border-hover); color: var(--text-primary); }
+  .status-btn.active-pend { background: rgba(244,160,34,0.15); border-color: var(--status-pend); color: var(--status-pend); }
+  .status-btn.active-res  { background: rgba(77,184,72,0.15);  border-color: var(--status-res);  color: var(--status-res); }
+  .status-btn.active-esc  { background: rgba(255,69,58,0.15);  border-color: var(--status-esc);  color: var(--status-esc); }
+
+  /* ── Modal nueva duda ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 520px; max-width: 95vw;
+    padding: 24px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .modal h2 { font-size: 16px; font-weight: 600; }
+  .modal label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: block; margin-bottom: 5px; }
+  .modal input, .modal textarea, .modal select {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    resize: vertical;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  .modal input:focus, .modal textarea:focus, .modal select:focus { border-color: var(--accent-blue); }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+  .btn-cancel {
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-secondary);
+    font-size: 13px; padding: 9px 18px; cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--border-hover); color: var(--text-primary); }
+  .btn-save {
+    background: var(--accent-green); color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    padding: 9px 20px; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-save:hover { opacity: 0.88; }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state svg { width: 40px; height: 40px; margin-bottom: 12px; stroke: var(--text-muted); fill: none; }
+  .empty-state p { font-size: 13px; }
+
+  @media (max-width: 700px) {
+    .panel-detail { position: fixed; inset: 0; width: 100% !important; z-index: 50; }
+    .header-stats { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-mark">QA</div>
+    <div>
+      <div class="header-title">Matriz de Dudas QA</div>
+      <div class="header-sub">DigiPro · Registro de preguntas del equipo</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat-pill pend"><div class="num" id="cnt-pend">0</div><div class="lbl">Pendientes</div></div>
+    <div class="stat-pill res"><div class="num" id="cnt-res">0</div><div class="lbl">Resueltas</div></div>
+    <div class="stat-pill esc"><div class="num" id="cnt-esc">0</div><div class="lbl">Escaladas</div></div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="search" placeholder="Buscar duda, respuesta, proyecto…">
+  </div>
+  <select id="filter-tema">
+    <option value="">Todos los temas</option>
+    <option value="hu">Historia de Usuario</option>
+    <option value="exp">Prueba Exploratoria</option>
+    <option value="cp">Caso de Prueba</option>
+    <option value="def">Gestión de Defectos</option>
+    <option value="az">Azure DevOps</option>
+    <option value="gen">General</option>
+  </select>
+  <select id="filter-estado">
+    <option value="">Todos los estados</option>
+    <option value="pend">Pendiente</option>
+    <option value="res">Resuelta</option>
+    <option value="esc">Escalada</option>
+  </select>
+  <button class="btn-add" onclick="openModal()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Nueva duda
+  </button>
+</div>
+
+<div class="main">
+  <div class="panel-table">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Duda / Pregunta</th>
+          <th>Tema</th>
+          <th>Estado</th>
+          <th>Proyecto</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-body"></tbody>
+    </table>
+    <div id="empty-state" class="empty-state" style="display:none;">
+      <svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p>No se encontraron dudas con ese filtro.</p>
+    </div>
+  </div>
+
+  <div class="panel-detail hidden" id="panel-detail">
+    <div class="detail-header">
+      <h3>Detalle de duda</h3>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn-edit" id="btn-edit" onclick="editarDuda(selectedId)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar
+        </button>
+        <button class="btn-delete" id="btn-delete" onclick="borrarDuda()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Borrar
+        </button>
+        <button class="btn-close" onclick="closeDetail()">✕</button>
+      </div>
+    </div>
+    <div class="detail-body" id="detail-body"></div>
+  </div>
+</div>
+
+<!-- Modal nueva duda -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2>Registrar nueva duda</h2>
+    <div>
+      <label>Pregunta / Duda</label>
+      <textarea id="m-duda" rows="3" placeholder="¿Cuál es tu duda?"></textarea>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div>
+        <label>Tema</label>
+        <select id="m-tema">
+          <option value="hu">Historia de Usuario</option>
+          <option value="exp">Prueba Exploratoria</option>
+          <option value="cp">Caso de Prueba</option>
+          <option value="def">Gestión de Defectos</option>
+          <option value="az">Azure DevOps</option>
+          <option value="gen">General</option>
+        </select>
+      </div>
+      <div>
+        <label>Estado inicial</label>
+        <select id="m-estado">
+          <option value="pend">Pendiente</option>
+          <option value="esc">Escalada</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div>
+        <label>Proyecto / Módulo</label>
+        <input type="text" id="m-proyecto" placeholder="Ej. DIGIPortal – Login">
+      </div>
+      <div>
+        <label>Reportado por</label>
+        <input type="text" id="m-autor" placeholder="Ej. Thony">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="guardarDuda()">Guardar duda</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TEMAS = {
+  hu:  { label: 'Historia de Usuario',   cls: 'tag-hu' },
+  exp: { label: 'Prueba Exploratoria',   cls: 'tag-exp' },
+  cp:  { label: 'Caso de Prueba',        cls: 'tag-cp' },
+  def: { label: 'Gestión de Defectos',   cls: 'tag-def' },
+  az:  { label: 'Azure DevOps',          cls: 'tag-az' },
+  gen: { label: 'General',               cls: 'tag-gen' }
+};
+const ESTADOS = {
+  pend: { label: 'Pendiente', cls: 'pend' },
+  res:  { label: 'Resuelta',  cls: 'res' },
+  esc:  { label: 'Escalada',  cls: 'esc' }
+};
+
+let dudas = [
+  { id:'DQA-001', duda:'¿Cuándo una prueba exploratoria necesita charter formal vs. exploración libre?', tema:'exp', estado:'res', proyecto:'DIGIPortal – Login', autor:'Thony', fecha:'2025-06-10', respuesta:'Usa charter cuando el riesgo es alto o el área es nueva. La exploración libre aplica en regresiones conocidas o durante spike de descubrimiento. ISTQB recomienda sesiones con time-box de 90 min y charter documentado para auditorías.' },
+  { id:'DQA-002', duda:'¿Cómo mapear los criterios de aceptación de una HU a casos de prueba en Azure DevOps?', tema:'hu', estado:'pend', proyecto:'DIGIPortal – Módulo Fiscal', autor:'Thony', fecha:'2025-06-12', respuesta:'' },
+  { id:'DQA-003', duda:'¿Qué severidad y prioridad asignar a un defecto que bloquea solo un rol de usuario?', tema:'def', estado:'pend', proyecto:'DIGIPortal – Permisos', autor:'Thony', fecha:'2025-06-13', respuesta:'' },
+  { id:'DQA-004', duda:'¿Cuál es la diferencia entre condición de prueba y caso de prueba según ISTQB Foundation?', tema:'cp', estado:'res', proyecto:'General', autor:'Thony', fecha:'2025-06-08', respuesta:'Condición de prueba: aspecto del ítem que puede verificarse (qué probar). Caso de prueba: conjunto de entradas, precondiciones, pasos y resultados esperados (cómo probarlo). Una condición puede derivar múltiples casos.' },
+  { id:'DQA-005', duda:'¿Cómo reportar en Azure DevOps un bug encontrado en prueba exploratoria sin HU asociada?', tema:'az', estado:'esc', proyecto:'DIGIPortal – Reportes', autor:'Thony', fecha:'2025-06-14', respuesta:'Escalado a Mariela — se requiere definir política de trazabilidad para defectos huérfanos.' },
+  { id:'DQA-006', duda:'¿Con qué criterio decidir si una HU necesita pruebas de regresión adicionales?', tema:'hu', estado:'pend', proyecto:'DIGIPortal – Flujo Documental', autor:'Thony', fecha:'2025-06-15', respuesta:'' },
+];
+
+let selectedId = null;
+
+function tagHTML(tema) {
+  const t = TEMAS[tema] || TEMAS.gen;
+  return `<span class="tag ${t.cls}">${t.label}</span>`;
+}
+function badgeHTML(estado) {
+  const e = ESTADOS[estado] || ESTADOS.pend;
+  return `<span class="badge ${e.cls}"><span class="badge-dot"></span>${e.label}</span>`;
+}
+function fmt(id) { return id.padStart(7,'0'); }
+
+function renderTabla() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const ft = document.getElementById('filter-tema').value;
+  const fe = document.getElementById('filter-estado').value;
+  const filtered = dudas.filter(d => {
+    const match = !q || d.duda.toLowerCase().includes(q) || d.respuesta.toLowerCase().includes(q) || d.proyecto.toLowerCase().includes(q);
+    const mt = !ft || d.tema === ft;
+    const me = !fe || d.estado === fe;
+    return match && mt && me;
+  });
+  const tbody = document.getElementById('tabla-body');
+  tbody.innerHTML = '';
+  document.getElementById('empty-state').style.display = filtered.length ? 'none' : 'block';
+  filtered.forEach(d => {
+    const tr = document.createElement('tr');
+    if (d.id === selectedId) tr.classList.add('selected');
+    tr.innerHTML = `
+      <td class="td-id">${d.id}</td>
+      <td class="td-duda">${d.duda}<small>${d.autor}</small></td>
+      <td>${tagHTML(d.tema)}</td>
+      <td>${badgeHTML(d.estado)}</td>
+      <td style="font-size:12px;color:var(--text-secondary);white-space:nowrap;">${d.proyecto}</td>
+      <td class="td-fecha">${d.fecha}</td>`;
+    tr.onclick = () => openDetail(d.id);
+    tbody.appendChild(tr);
+  });
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById('cnt-pend').textContent = dudas.filter(d=>d.estado==='pend').length;
+  document.getElementById('cnt-res').textContent  = dudas.filter(d=>d.estado==='res').length;
+  document.getElementById('cnt-esc').textContent  = dudas.filter(d=>d.estado==='esc').length;
+}
+
+function openDetail(id) {
+  selectedId = id;
+  const d = dudas.find(x => x.id === id);
+  const panel = document.getElementById('panel-detail');
+  panel.classList.remove('hidden');
+  const body = document.getElementById('detail-body');
+  body.innerHTML = `
+    <div class="detail-field"><label>ID</label><p style="font-family:monospace;color:var(--text-muted)">${d.id}</p></div>
+    <div class="detail-field"><label>Pregunta</label><p>${d.duda}</p></div>
+    <div class="detail-field"><label>Tema</label><p>${tagHTML(d.tema)}</p></div>
+    <div class="detail-field"><label>Proyecto</label><p>${d.proyecto}</p></div>
+    <div class="detail-field"><label>Reportado por</label><p>${d.autor} · ${d.fecha}</p></div>
+    <div class="detail-field">
+      <label>Estado</label>
+      <div class="status-selector">
+        <button class="status-btn ${d.estado==='pend'?'active-pend':''}" onclick="cambiarEstado('${d.id}','pend')">Pendiente</button>
+        <button class="status-btn ${d.estado==='res'?'active-res':''}"  onclick="cambiarEstado('${d.id}','res')">Resuelta</button>
+        <button class="status-btn ${d.estado==='esc'?'active-esc':''}"  onclick="cambiarEstado('${d.id}','esc')">Escalada</button>
+      </div>
+    </div>
+    <div class="detail-field">
+      <label>Respuesta</label>
+      <div class="detail-answer-box ${d.respuesta?'':'empty'}" id="answer-box">${d.respuesta || 'Sin respuesta aún.'}</div>
+    </div>
+    <div class="detail-field">
+      <label>📝 Notas de reunión / respuesta recibida</label>
+      <textarea class="notas-manual" id="notas-manual" placeholder="Anota aquí lo que te respondieron en la llamada o presentación…">${d.notasManual || ''}</textarea>
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <button class="btn-guardar-notas" onclick="guardarNotas('${d.id}')">Guardar nota</button>
+        <span class="notas-saved-hint" id="notas-hint">✓ Guardado</span>
+      </div>
+    </div>
+    <button class="btn-ai" id="btn-ai" onclick="consultarIA('${d.id}')">
+      <span id="ai-icon">✦</span>
+      <span id="ai-label">Consultar a Claude sobre esta duda</span>
+      <div class="ai-spinner" id="ai-spinner"></div>
+    </button>`;
+  renderTabla();
+}
+
+function closeDetail() {
+  selectedId = null;
+  document.getElementById('panel-detail').classList.add('hidden');
+  renderTabla();
+}
+
+function cambiarEstado(id, estado) {
+  const d = dudas.find(x => x.id === id);
+  if (d) { d.estado = estado; openDetail(id); }
+}
+
+async function consultarIA(id) {
+  const d = dudas.find(x => x.id === id);
+  const btn = document.getElementById('btn-ai');
+  const lbl = document.getElementById('ai-label');
+  const spin = document.getElementById('ai-spinner');
+  const box = document.getElementById('answer-box');
+  btn.disabled = true;
+  lbl.textContent = 'Consultando…';
+  spin.style.display = 'block';
+  box.classList.remove('empty');
+  box.textContent = '';
+
+  const temaLabel = TEMAS[d.tema]?.label || 'QA';
+  const prompt = `Eres un experto en QA con certificación ISTQB. Responde en español, de forma clara y práctica para un QA Analyst trabajando con Azure DevOps e historias de usuario en un equipo ágil.\n\nTema: ${temaLabel}\nDuda: ${d.duda}\n\nDa una respuesta concisa (máximo 120 palabras), con criterio ISTQB cuando aplique.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const texto = data.content?.map(c => c.text || '').join('') || 'Sin respuesta.';
+    d.respuesta = texto;
+    if (d.estado === 'pend') d.estado = 'res';
+    box.textContent = texto;
+    box.classList.remove('empty');
+    openDetail(id);
+  } catch(e) {
+    box.textContent = 'Error al conectar con Claude. Verifica tu conexión.';
+    box.classList.add('empty');
+  } finally {
+    btn.disabled = false;
+    lbl.textContent = 'Consultar a Claude sobre esta duda';
+    spin.style.display = 'none';
+  }
+}
+
+function borrarDuda() {
+  const d = dudas.find(x => x.id === selectedId);
+  if (!d) return;
+  if (!confirm(`¿Borrar la duda "${d.id}"?\n\nEsta acción no se puede deshacer.`)) return;
+  dudas = dudas.filter(x => x.id !== selectedId);
+  closeDetail();
+  renderTabla();
+}
+
+function editarDuda(id) {
+  const d = dudas.find(x => x.id === id);
+  if (!d) return;
+  const body = document.getElementById('detail-body');
+  const inStyle = 'width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:13px;padding:8px 12px;outline:none;font-family:inherit;';
+  body.innerHTML = `
+    <div class="detail-field"><label>ID</label><p style="font-family:monospace;color:var(--text-muted)">${d.id}</p></div>
+    <div class="detail-field">
+      <label>Pregunta / Duda</label>
+      <textarea id="e-duda" rows="4" style="${inStyle}resize:vertical;">${escHTML(d.duda)}</textarea>
+    </div>
+    <div class="detail-field">
+      <label>Tema</label>
+      <select id="e-tema" style="${inStyle}cursor:pointer;">
+        <option value="hu" ${d.tema==='hu'?'selected':''}>Historia de Usuario</option>
+        <option value="exp" ${d.tema==='exp'?'selected':''}>Prueba Exploratoria</option>
+        <option value="cp" ${d.tema==='cp'?'selected':''}>Caso de Prueba</option>
+        <option value="def" ${d.tema==='def'?'selected':''}>Gestión de Defectos</option>
+        <option value="az" ${d.tema==='az'?'selected':''}>Azure DevOps</option>
+        <option value="gen" ${d.tema==='gen'?'selected':''}>General</option>
+      </select>
+    </div>
+    <div class="detail-field">
+      <label>Proyecto / Módulo</label>
+      <input type="text" id="e-proyecto" value="${escHTML(d.proyecto)}" style="${inStyle}">
+    </div>
+    <div class="detail-field">
+      <label>Reportado por</label>
+      <input type="text" id="e-autor" value="${escHTML(d.autor)}" style="${inStyle}">
+    </div>
+    <div class="detail-field">
+      <label>Respuesta</label>
+      <textarea id="e-respuesta" rows="5" placeholder="Escribe la respuesta…" style="${inStyle}resize:vertical;">${escHTML(d.respuesta || '')}</textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn-save" onclick="guardarEdicion('${d.id}')">Guardar cambios</button>
+      <button class="btn-cancel" onclick="openDetail('${d.id}')">Cancelar</button>
+    </div>`;
+}
+
+function escHTML(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function guardarEdicion(id) {
+  const d = dudas.find(x => x.id === id);
+  if (!d) return;
+  const duda = document.getElementById('e-duda').value.trim();
+  if (!duda) { alert('La duda no puede estar vacía.'); return; }
+  d.duda     = duda;
+  d.tema     = document.getElementById('e-tema').value;
+  d.proyecto = document.getElementById('e-proyecto').value.trim() || d.proyecto;
+  d.autor    = document.getElementById('e-autor').value.trim() || d.autor;
+  d.respuesta = document.getElementById('e-respuesta').value.trim();
+  if (d.respuesta && d.estado === 'pend') d.estado = 'res';
+  openDetail(id);
+  renderTabla();
+}
+
+function guardarNotas(id) {
+  const d = dudas.find(x => x.id === id);
+  if (!d) return;
+  const txt = document.getElementById('notas-manual').value;
+  d.notasManual = txt;
+  const hint = document.getElementById('notas-hint');
+  hint.style.display = 'flex';
+  setTimeout(() => { hint.style.display = 'none'; }, 2000);
+}
+
+function openModal() { document.getElementById('modal-overlay').classList.add('open'); }
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+function guardarDuda() {
+  const duda = document.getElementById('m-duda').value.trim();
+  if (!duda) { alert('Escribe la duda antes de guardar.'); return; }
+  const num = dudas.length + 1;
+  const id = 'DQA-' + String(num).padStart(3,'0');
+  const hoy = new Date().toISOString().slice(0,10);
+  dudas.unshift({
+    id, duda,
+    tema: document.getElementById('m-tema').value,
+    estado: document.getElementById('m-estado').value,
+    proyecto: document.getElementById('m-proyecto').value || 'Sin proyecto',
+    autor: document.getElementById('m-autor').value || 'QA',
+    fecha: hoy, respuesta: ''
+  });
+  closeModal();
+  document.getElementById('m-duda').value = '';
+  document.getElementById('m-proyecto').value = '';
+  document.getElementById('m-autor').value = '';
+  renderTabla();
+  openDetail(id);
+}
+
+document.getElementById('search').addEventListener('input', renderTabla);
+document.getElementById('filter-tema').addEventListener('change', renderTabla);
+document.getElementById('filter-estado').addEventListener('change', renderTabla);
+document.getElementById('modal-overlay').addEventListener('click', e => { if(e.target === e.currentTarget) closeModal(); });
+
+renderTabla();
+</script>
+</body>
+</html>
